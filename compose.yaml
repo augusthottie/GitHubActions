@@ -1,0 +1,6 @@
+services:
+  app:
+    image: my-python-app
+    container_name: my-python-app
+    ports:
+      - "80:5000"

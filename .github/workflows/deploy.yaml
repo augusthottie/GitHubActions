@@ -1,4 +1,4 @@
-name: Deploy Python App to AWS
+name: Deploy Python App to AWS with Docker Compose
 
 on:
   push:
@@ -20,19 +20,21 @@ jobs:
 
       # Save the Docker image as a tar file
       - name: Save Docker image
-        run: docker save -o my-python-app.tar my-python-app
+        run: |
+          mkdir -p docker-images
+          docker save -o docker-images/my-python-app.tar my-python-app
 
-      # Transfer the Docker image to the AWS EC2 instance
-      - name: Transfer Docker image to EC2
+      # Transfer the Docker image and docker-compose.yml to the AWS EC2 instance
+      - name: Transfer files to EC2
         uses: appleboy/scp-action@v0.1.4
         with:
           host: ${{ secrets.AWS_EC2_HOST }}
           username: ${{ secrets.AWS_EC2_USERNAME }}
           key: ${{ secrets.AWS_EC2_SSH_KEY }}
-          source: "my-python-app.tar"
-          target: "~/my-python-app.tar"
+          source: "docker-images/my-python-app.tar,compose.yaml"
+          target: "~/"
 
-      # Deploy to AWS EC2
+      # Deploy to AWS EC2 using Docker Compose
       - name: Deploy to AWS EC2
         uses: appleboy/ssh-action@v0.1.10
         with:
@@ -40,12 +42,11 @@ jobs:
           username: ${{ secrets.AWS_EC2_USERNAME }}
           key: ${{ secrets.AWS_EC2_SSH_KEY }}
           script: |
-            # Stop and remove any existing container
-            docker stop my-python-app || true
-            docker rm my-python-app || true
-
             # Load the Docker image from the tar file
             docker load -i ~/my-python-app.tar
 
-            # Run the new container
-            docker run -d --name my-python-app -p 80:5000 my-python-app
+            # Stop and remove any existing containers
+            docker-compose down || true
+
+            # Start the application using Docker Compose
+            docker-compose up -d

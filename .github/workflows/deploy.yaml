@@ -22,7 +22,7 @@ jobs:
       - name: Save Docker image
         run: |
           mkdir -p docker-images
-          docker save -o docker-images/my-python-app.tar my-python-app
+          docker save my-python-app -o docker-images/my-python-app.tar
 
       # Transfer the Docker image and docker-compose.yml to the AWS EC2 instance
       - name: Transfer files to EC2

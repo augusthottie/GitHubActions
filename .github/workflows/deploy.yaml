@@ -21,7 +21,8 @@ jobs:
       # Save and compress the Docker image
       - name: Save and compress Docker image
         run: |
-          docker save my-python-app | gzip > my-python-app.tar.gz
+          docker save my-python-app > my-python-app.tar
+          gzip my-python-app.tar
 
       # Transfer the compressed Docker image and docker-compose.yml to the AWS EC2 instance
       - name: Copy files to server
@@ -30,9 +31,7 @@ jobs:
           host: ${{ secrets.AWS_EC2_HOST }}
           username: ${{ secrets.AWS_EC2_USERNAME }}
           key: ${{ secrets.AWS_EC2_SSH_KEY }}
-          source: 
-            my-python-app.tar.gz
-            compose.yaml
+          source: "my-python-app.tar.gz,docker-compose.yml"
           target: "/tmp"
 
       # Load the Docker image and deploy using Docker Compose
@@ -46,11 +45,8 @@ jobs:
             # Navigate to the /tmp directory
             cd /tmp
 
-            # Ensure Docker Compose is available
-            docker-compose version
-
             # Decompress the Docker image
-            gunzip -f my-python-app.tar.gz
+            gunzip my-python-app.tar.gz
 
             # Load the Docker image
             docker load < my-python-app.tar

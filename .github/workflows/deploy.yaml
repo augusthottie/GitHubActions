@@ -18,32 +18,41 @@ jobs:
       - name: Build Docker image
         run: docker build -t my-python-app .
 
-      # Save the Docker image as a tar file
-      - name: Save Docker image
+      # Save and compress the Docker image
+      - name: Save and compress Docker image
         run: |
-          mkdir -p docker-images
-          docker save my-python-app -o docker-images/my-python-app.tar
+          docker save my-python-app > my-python-app.tar
+          gzip my-python-app.tar
 
-      # Transfer the Docker image and docker-compose.yml to the AWS EC2 instance
-      - name: Transfer files to EC2
-        uses: appleboy/scp-action@v0.1.4
+      # Transfer the compressed Docker image and docker-compose.yml to the AWS EC2 instance
+      - name: Copy files to server
+        uses: appleboy/scp-action@master
         with:
           host: ${{ secrets.AWS_EC2_HOST }}
           username: ${{ secrets.AWS_EC2_USERNAME }}
           key: ${{ secrets.AWS_EC2_SSH_KEY }}
-          source: "docker-images/my-python-app.tar,compose.yaml"
-          target: "~/"
+          source: "my-python-app.tar.gz,docker-compose.yml"
+          target: "/tmp"
 
-      # Deploy to AWS EC2 using Docker Compose
-      - name: Deploy to AWS EC2
-        uses: appleboy/ssh-action@v0.1.10
+      # Load the Docker image and deploy using Docker Compose
+      - name: Load image and deploy
+        uses: appleboy/ssh-action@master
         with:
           host: ${{ secrets.AWS_EC2_HOST }}
           username: ${{ secrets.AWS_EC2_USERNAME }}
           key: ${{ secrets.AWS_EC2_SSH_KEY }}
           script: |
-            # Load the Docker image from the tar file
-            docker load -i ~/my-python-app.tar
+            # Navigate to the /tmp directory
+            cd /tmp
+
+            # Decompress the Docker image
+            gunzip my-python-app.tar.gz
+
+            # Load the Docker image
+            docker load < my-python-app.tar
+
+            # Remove the tar file to free up space
+            rm -f my-python-app.tar
 
             # Stop and remove any existing containers
             docker-compose down || true

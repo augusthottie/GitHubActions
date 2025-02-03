@@ -1,0 +1,41 @@
+name: Deploy Python App to AWS
+
+on:
+  push:
+    branches:
+      - main  # Trigger on push to the main branch
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      # Check out the repository
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      # Build the Docker image
+      - name: Build Docker image
+        run: docker build -t my-python-app .
+
+      # Save the Docker image as a tar file
+      - name: Save Docker image
+        run: docker save -o my-python-app.tar my-python-app
+
+      # Deploy to AWS EC2
+      - name: Deploy to AWS EC2
+        uses: appleboy/ssh-action@v0.1.10
+        with:
+          host: ${{ secrets.AWS_EC2_HOST }}
+          username: ${{ secrets.AWS_EC2_USERNAME }}
+          key: ${{ secrets.AWS_EC2_SSH_KEY }}
+          script: |
+            # Stop and remove any existing container
+            docker stop my-python-app || true
+            docker rm my-python-app || true
+
+            # Copy the Docker image from GitHub Actions to the AWS server
+            docker load -i my-python-app.tar
+
+            # Run the new container
+            docker run -d --name my-python-app -p 80:5000 my-python-app

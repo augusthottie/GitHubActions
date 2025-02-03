@@ -39,3 +39,4 @@ jobs:
 
             # Run the new container
             docker run -d --name my-python-app -p 80:5000 my-python-app
+            

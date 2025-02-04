@@ -31,7 +31,7 @@ jobs:
           host: ${{ secrets.AWS_EC2_HOST }}
           username: ${{ secrets.AWS_EC2_USERNAME }}
           key: ${{ secrets.AWS_EC2_SSH_KEY }}
-          # source: "my-python-app.tar.gz"
+          source: "my-python-app.tar.gz,docker-compose.yml"
           target: "/tmp"
 
       # Load the Docker image and deploy using Docker Compose
